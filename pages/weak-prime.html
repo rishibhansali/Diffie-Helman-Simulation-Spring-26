@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Weak Prime Attack — Simulation</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .prime-selector {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 1.5rem;
+    }
+    .prime-selector label {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+    .crack-progress {
+      margin-top: 0.75rem;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 0.75rem;
+    }
+    .crack-progress h4 { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.5rem; }
+    .crack-stat { font-family: var(--font-mono); font-size: 0.8rem; display: flex; justify-content: space-between; margin-bottom: 0.3rem; }
+    .crack-stat .label { color: var(--text-muted); }
+    .crack-stat .value { color: var(--yellow); }
+    .comparison-wrap {
+      margin-top: 1.5rem;
+    }
+    .comparison-wrap h2 {
+      font-size: 0.85rem; font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 1rem;
+    }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <a class="navbar-brand" href="../index.html">DH<span>SIM</span></a>
+  <ul class="navbar-links">
+    <li><a href="../index.html">Home</a></li>
+    <li><a href="dh-exchange.html">DH Exchange</a></li>
+    <li><a href="mitm-attack.html">MITM Attack</a></li>
+    <li><a href="weak-prime.html" class="active">Weak Prime</a></li>
+    <li><a href="forward-secrecy.html">Forward Secrecy</a></li>
+    <li><a href="authenticated-dh.html">Auth DH</a></li>
+  </ul>
+</nav>
+
+<div class="page-header">
+  <h1>Weak Prime Brute Force Attack</h1>
+  <p>
+    The security of DH depends entirely on the size of the prime modulus. Small primes make the
+    Discrete Logarithm Problem trivially solvable. Select a prime size below and watch an attacker
+    recover the private key in real time — then compare against cryptographically strong sizes.
+  </p>
+</div>
+
+<div class="container">
+
+  <div class="prime-selector">
+    <label>Prime size:</label>
+    <select class="custom-select" id="primeSel">
+      <option value="16">16-bit (insecure)</option>
+      <option value="32" selected>32-bit (very weak)</option>
+      <option value="64">64-bit (weak)</option>
+      <option value="128">128-bit (vulnerable)</option>
+      <option value="2048">2048-bit (secure)</option>
+    </select>
+    <button class="btn btn-danger" id="btnRun">⚡ Run Attack</button>
+    <button class="btn btn-secondary" id="btnReset">↺ Reset</button>
+  </div>
+
+  <div id="resultBanner" class="result-banner"></div>
+
+  <div class="sim-layout">
+    <!-- LEFT: Animation -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-dot amber"></span>
+        <h3>Attack Visualization</h3>
+      </div>
+      <div class="panel-body" style="padding:0;">
+        <canvas class="anim-canvas" id="canvas" width="600" height="320"></canvas>
+      </div>
+    </div>
+
+    <!-- RIGHT: Numbers -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-dot amber"></span>
+        <h3>Live Numbers</h3>
+      </div>
+      <div class="panel-body">
+        <div class="numbers-grid">
+          <div class="num-row"><span class="num-label">Bit size</span><span class="num-val muted" id="nBits">—</span></div>
+          <div class="num-row"><span class="num-label">Prime (p)</span><span class="num-val muted" id="nP">—</span></div>
+          <div class="num-row"><span class="num-label">Generator (g)</span><span class="num-val muted" id="nG">—</span></div>
+          <div class="num-row"><span class="num-label">Alice private (X_A) [hidden]</span><span class="num-val" id="nXA">—</span></div>
+          <div class="num-row"><span class="num-label">Alice public (Y_A)</span><span class="num-val blue" id="nYA">—</span></div>
+          <div class="num-row"><span class="num-label">Attacker attempts</span><span class="num-val yellow" id="nAttempts">0</span></div>
+          <div class="num-row"><span class="num-label">Private key cracked</span><span class="num-val" id="nFound">—</span></div>
+        </div>
+
+        <div class="crack-progress" id="crackProgress" style="display:none;">
+          <h4>Brute Force Progress</h4>
+          <div class="crack-stat"><span class="label">Attempts:</span><span class="value" id="cpAttempts">0</span></div>
+          <div class="crack-stat"><span class="label">Current x tested:</span><span class="value" id="cpCurrent">—</span></div>
+          <div class="crack-stat"><span class="label">g^x mod p:</span><span class="value" id="cpResult">—</span></div>
+          <div class="progress-wrap" style="margin-top:0.5rem;"><div class="progress-bar" id="progressBar"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Comparison table -->
+  <div class="comparison-wrap">
+    <h2>Prime Size vs Security — Comparison Table</h2>
+    <div class="panel">
+      <div class="panel-body" style="padding:0.5rem;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Bit Size</th>
+              <th>Prime Example</th>
+              <th>DH Computation Time</th>
+              <th>Brute Force Time</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>16-bit</td>
+              <td style="color:var(--text-muted)">23</td>
+              <td>&lt; 0.1 ms</td>
+              <td style="color:var(--red)">&lt; 1 ms</td>
+              <td><span class="tag tag-attack">Broken</span></td>
+            </tr>
+            <tr>
+              <td>32-bit</td>
+              <td style="color:var(--text-muted)">4,294,967,311</td>
+              <td>&lt; 1 ms</td>
+              <td style="color:var(--red)">~10 ms</td>
+              <td><span class="tag tag-attack">Broken</span></td>
+            </tr>
+            <tr>
+              <td>64-bit</td>
+              <td style="color:var(--text-muted)">18.4 × 10¹⁸</td>
+              <td>~1 ms</td>
+              <td style="color:var(--yellow)">~2 hours (CPU)</td>
+              <td><span class="tag tag-attack">Weak</span></td>
+            </tr>
+            <tr>
+              <td>128-bit</td>
+              <td style="color:var(--text-muted)">3.4 × 10³⁸</td>
+              <td>~5 ms</td>
+              <td style="color:var(--yellow)">~10²² years</td>
+              <td><span class="tag tag-attack">Vulnerable</span></td>
+            </tr>
+            <tr>
+              <td>2048-bit</td>
+              <td style="color:var(--text-muted)">RSA-2048 prime</td>
+              <td>~50 ms</td>
+              <td style="color:var(--green)">&gt; age of universe</td>
+              <td><span class="tag tag-secure">Secure</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Steps -->
+  <div class="steps-section" style="margin-top:1.5rem;">
+    <h2>Step-by-Step Breakdown</h2>
+    <div class="step-list">
+      <div class="step-item" id="s1">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <h4>DH Exchange with Selected Prime</h4>
+          <p>Alice and Bob perform a standard DH exchange using the selected prime size. An attacker observes the public values p, g, and Y_A.</p>
+          <div class="math" id="s1math"></div>
+        </div>
+      </div>
+      <div class="step-item" id="s2">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <h4>Brute Force Begins</h4>
+          <p>The attacker iterates x = 1, 2, 3, … and checks if g^x mod p equals Y_A. For small primes the key space is tiny — the correct x is found almost immediately.</p>
+        </div>
+      </div>
+      <div class="step-item" id="s3">
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <h4>Private Key Recovered (or Not)</h4>
+          <p>For small primes: the attacker finds X_A and can compute the shared secret K = Y_B^X_A mod p — full session compromise. For 2048-bit: the key space is 2^2048 ≈ 10^617 — brute force is physically impossible.</p>
+          <div class="math" id="s3math"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  Diffie-Hellman Simulation &mdash; Network Security Spring 2026 &mdash;
+  <span>Bhansali · Mody · Bhat · Londhe</span>
+</footer>
+
+<script src="../js/dh-math.js"></script>
+<script src="../js/weak-prime.js"></script>
+</body>
+</html>

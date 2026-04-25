@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MITM Attack — Simulation</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .dual-secrets {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 0.5rem 0;
+    }
+    .secret-box {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 0.75rem;
+    }
+    .secret-box h4 { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.4rem; text-transform: uppercase; letter-spacing: 0.06em; }
+    .secret-val { font-family: var(--font-mono); font-size: 0.8rem; color: var(--red); word-break: break-all; }
+    .msg-flow {
+      margin-top: 1rem;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 0.75rem;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+    }
+    .msg-flow .mf-row { display: flex; gap: 0.5rem; margin-bottom: 0.3rem; align-items: flex-start; }
+    .mf-who { color: var(--text-muted); min-width: 48px; }
+    .mf-msg { word-break: break-all; }
+    .mf-msg.green { color: var(--green); }
+    .mf-msg.red   { color: var(--red); }
+    .mf-msg.blue  { color: var(--blue); }
+    .mf-msg.yellow{ color: var(--yellow); }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <a class="navbar-brand" href="../index.html">DH<span>SIM</span></a>
+  <ul class="navbar-links">
+    <li><a href="../index.html">Home</a></li>
+    <li><a href="dh-exchange.html">DH Exchange</a></li>
+    <li><a href="mitm-attack.html" class="active">MITM Attack</a></li>
+    <li><a href="weak-prime.html">Weak Prime</a></li>
+    <li><a href="forward-secrecy.html">Forward Secrecy</a></li>
+    <li><a href="authenticated-dh.html">Auth DH</a></li>
+  </ul>
+</nav>
+
+<div class="page-header">
+  <h1>Man-in-the-Middle Attack</h1>
+  <p>
+    In unauthenticated DH, Alice and Bob have no way to verify who they're exchanging keys with.
+    Eve exploits this by intercepting both public keys and substituting her own — creating two
+    separate shared secrets while Alice and Bob believe they share one secure channel.
+  </p>
+</div>
+
+<div class="container">
+
+  <div class="btn-group">
+    <button class="btn btn-danger" id="btnRun">⚡ Launch MITM Attack</button>
+    <button class="btn btn-secondary" id="btnReset">↺ Reset</button>
+  </div>
+
+  <div id="resultBanner" class="result-banner"></div>
+
+  <div class="sim-layout">
+    <!-- LEFT: Animation -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-dot red"></span>
+        <h3>Attack Animation</h3>
+      </div>
+      <div class="panel-body" style="padding:0;">
+        <canvas class="anim-canvas" id="canvas" width="600" height="320"></canvas>
+      </div>
+    </div>
+
+    <!-- RIGHT: Numbers -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-dot red"></span>
+        <h3>Live Numbers</h3>
+      </div>
+      <div class="panel-body">
+        <div class="numbers-grid">
+          <div class="num-row"><span class="num-label">Prime (p)</span><span class="num-val muted" id="nP">—</span></div>
+          <div class="num-row"><span class="num-label">Generator (g)</span><span class="num-val muted" id="nG">—</span></div>
+          <div class="num-row" style="border-color:var(--green)"><span class="num-label" style="color:var(--green)">Alice public (Y_A)</span><span class="num-val" id="nYA">—</span></div>
+          <div class="num-row" style="border-color:var(--blue)"><span class="num-label" style="color:var(--blue)">Bob public (Y_B)</span><span class="num-val blue" id="nYB">—</span></div>
+          <div class="num-row" style="border-color:var(--red)"><span class="num-label" style="color:var(--red)">Eve pub→Alice (Y_E1)</span><span class="num-val red" id="nYE1">—</span></div>
+          <div class="num-row" style="border-color:var(--red)"><span class="num-label" style="color:var(--red)">Eve pub→Bob (Y_E2)</span><span class="num-val red" id="nYE2">—</span></div>
+        </div>
+
+        <div class="dual-secrets" style="margin-top:1rem;">
+          <div class="secret-box" style="border-color:var(--red)">
+            <h4>K1 — Alice &amp; Eve</h4>
+            <div class="secret-val" id="nK1">—</div>
+            <div style="font-size:0.7rem;color:var(--text-muted);margin-top:0.3rem;">Alice thinks this is shared with Bob</div>
+          </div>
+          <div class="secret-box" style="border-color:var(--red)">
+            <h4>K2 — Bob &amp; Eve</h4>
+            <div class="secret-val" id="nK2">—</div>
+            <div style="font-size:0.7rem;color:var(--text-muted);margin-top:0.3rem;">Bob thinks this is shared with Alice</div>
+          </div>
+        </div>
+
+        <div class="msg-flow" id="msgFlow" style="display:none;">
+          <div style="color:var(--text-muted);font-size:0.7rem;margin-bottom:0.5rem;text-transform:uppercase;letter-spacing:0.08em;">Message Interception Flow</div>
+          <div id="msgLines"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step breakdown -->
+  <div class="steps-section">
+    <h2>Step-by-Step Breakdown</h2>
+    <div class="step-list">
+      <div class="step-item" id="s1">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <h4>Setup: Eve Positions Herself</h4>
+          <p>Eve controls the network path between Alice and Bob (e.g., a compromised router). She can intercept, drop, and inject any packet. Alice and Bob do not know Eve exists.</p>
+        </div>
+      </div>
+      <div class="step-item" id="s2">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <h4>Alice Sends Y_A — Eve Intercepts</h4>
+          <p>Alice sends her DH public key Y_A intended for Bob. Eve intercepts it silently. Bob never receives Alice's real key.</p>
+          <div class="math" id="s2math"></div>
+        </div>
+      </div>
+      <div class="step-item" id="s3">
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <h4>Eve Substitutes Her Own Key to Bob</h4>
+          <p>Eve generates her own key pair and sends her public key Y_E to Bob, pretending to be Alice. Bob computes a shared secret with Eve, thinking it's with Alice.</p>
+          <div class="math" id="s3math"></div>
+        </div>
+      </div>
+      <div class="step-item" id="s4">
+        <div class="step-num">4</div>
+        <div class="step-content">
+          <h4>Bob Sends Y_B — Eve Intercepts Again</h4>
+          <p>Bob sends his public key to Alice. Eve intercepts it and substitutes her own key, so Alice computes a shared secret with Eve, thinking it's with Bob.</p>
+          <div class="math" id="s4math"></div>
+        </div>
+      </div>
+      <div class="step-item" id="s5">
+        <div class="step-num">5</div>
+        <div class="step-content">
+          <h4>Two Separate Secrets — Eve Controls Both</h4>
+          <p>K1 = shared between Alice and Eve. K2 = shared between Bob and Eve. Eve can decrypt messages from Alice using K1, read them, re-encrypt with K2, and forward to Bob. Neither party suspects the channel is compromised.</p>
+          <div class="math" id="s5math"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  Diffie-Hellman Simulation &mdash; Network Security Spring 2026 &mdash;
+  <span>Bhansali · Mody · Bhat · Londhe</span>
+</footer>
+
+<script src="../js/dh-math.js"></script>
+<script src="../js/mitm.js"></script>
+</body>
+</html>

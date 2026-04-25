@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Forward Secrecy — Simulation</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .scenario-desc {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 1rem 1.25rem;
+      margin-bottom: 1.5rem;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+    .session-log {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 0.75rem;
+      margin-top: 0.75rem;
+      max-height: 200px;
+      overflow-y: auto;
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+    }
+    .log-entry { margin-bottom: 0.3rem; line-height: 1.5; }
+    .log-entry .ts { color: var(--text-dim); }
+    .log-entry .msg-green { color: var(--green); }
+    .log-entry .msg-red   { color: var(--red); }
+    .log-entry .msg-blue  { color: var(--blue); }
+    .log-entry .msg-yellow{ color: var(--yellow); }
+    .vault-row {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    .vault-box {
+      flex: 1;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 0.75rem;
+      text-align: center;
+    }
+    .vault-box .vault-icon { font-size: 2rem; margin-bottom: 0.4rem; }
+    .vault-box h4 { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; }
+    .vault-box p  { font-size: 0.72rem; color: var(--text-dim); margin-top: 0.3rem; }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <a class="navbar-brand" href="../index.html">DH<span>SIM</span></a>
+  <ul class="navbar-links">
+    <li><a href="../index.html">Home</a></li>
+    <li><a href="dh-exchange.html">DH Exchange</a></li>
+    <li><a href="mitm-attack.html">MITM Attack</a></li>
+    <li><a href="weak-prime.html">Weak Prime</a></li>
+    <li><a href="forward-secrecy.html" class="active">Forward Secrecy</a></li>
+    <li><a href="authenticated-dh.html">Auth DH</a></li>
+  </ul>
+</nav>
+
+<div class="page-header">
+  <h1>Perfect Forward Secrecy</h1>
+  <p>
+    What happens when a long-term private key is leaked after the fact?
+    With static keys, every past session is retroactively compromised.
+    Perfect Forward Secrecy uses ephemeral (one-time) keys so that past sessions
+    remain secure even if the long-term key is later stolen.
+  </p>
+</div>
+
+<div class="container">
+
+  <div class="toggle-group">
+    <button class="toggle-btn active" id="toggleStatic">Without PFS</button>
+    <button class="toggle-btn" id="toggleEphemeral">With PFS</button>
+  </div>
+
+  <div class="scenario-desc" id="scenarioDesc">
+    <strong style="color:var(--red)">Scenario: Static Keys (No PFS)</strong><br>
+    Alice and Bob reuse the same long-term DH key pair for every session.
+    An adversary records all encrypted traffic. Later, Alice's private key is stolen.
+    The adversary can now decrypt every recorded session retroactively.
+  </div>
+
+  <div class="btn-group">
+    <button class="btn btn-primary" id="btnRun">▶ Run Simulation</button>
+    <button class="btn btn-secondary" id="btnReset">↺ Reset</button>
+  </div>
+
+  <div id="resultBanner" class="result-banner"></div>
+
+  <div class="sim-layout">
+    <!-- LEFT: Animation -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-dot" id="canvasDot"></span>
+        <h3>Scenario Animation</h3>
+      </div>
+      <div class="panel-body" style="padding:0;">
+        <canvas class="anim-canvas" id="canvas" width="600" height="320"></canvas>
+      </div>
+    </div>
+
+    <!-- RIGHT: Numbers + log -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-dot blue"></span>
+        <h3>Session Details</h3>
+      </div>
+      <div class="panel-body">
+        <div class="numbers-grid">
+          <div class="num-row"><span class="num-label">Mode</span><span class="num-val yellow" id="nMode">—</span></div>
+          <div class="num-row"><span class="num-label">Alice key (long-term)</span><span class="num-val muted" id="nKeyLT">—</span></div>
+          <div class="num-row"><span class="num-label">Session 1 key</span><span class="num-val" id="nK1">—</span></div>
+          <div class="num-row"><span class="num-label">Session 2 key</span><span class="num-val" id="nK2">—</span></div>
+          <div class="num-row"><span class="num-label">Session 3 key</span><span class="num-val" id="nK3">—</span></div>
+          <div class="num-row"><span class="num-label">Key leaked at t=T</span><span class="num-val red" id="nLeaked">—</span></div>
+          <div class="num-row"><span class="num-label">Sessions decryptable?</span><span class="num-val" id="nDecrypt">—</span></div>
+        </div>
+
+        <div class="vault-row" id="vaultRow" style="display:none;">
+          <div class="vault-box" id="vault1">
+            <div class="vault-icon">🔒</div>
+            <h4>Session 1</h4>
+            <p id="vault1status">Recorded</p>
+          </div>
+          <div class="vault-box" id="vault2">
+            <div class="vault-icon">🔒</div>
+            <h4>Session 2</h4>
+            <p id="vault2status">Recorded</p>
+          </div>
+          <div class="vault-box" id="vault3">
+            <div class="vault-icon">🔒</div>
+            <h4>Session 3</h4>
+            <p id="vault3status">Recorded</p>
+          </div>
+        </div>
+
+        <div class="session-log" id="sessionLog"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Steps -->
+  <div class="steps-section">
+    <h2>Step-by-Step Breakdown</h2>
+    <div class="step-list">
+      <div class="step-item" id="s1">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <h4>Multiple Sessions Established</h4>
+          <p>Alice and Bob communicate over three sessions. Each session produces an encrypted ciphertext that an adversary records passively.</p>
+        </div>
+      </div>
+      <div class="step-item" id="s2">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <h4>Key Compromise Event</h4>
+          <p>At some point in the future, Alice's private key is stolen — either by a breach, legal compulsion, or cryptanalytic breakthrough.</p>
+        </div>
+      </div>
+      <div class="step-item" id="s3">
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <h4>Consequence Depends on Key Design</h4>
+          <p>Without PFS: the stolen long-term key lets the attacker recompute all past session keys from the recorded public key exchanges → all sessions decrypted. With PFS: ephemeral keys were discarded after each session; the long-term key cannot reconstruct them → past sessions remain secret.</p>
+          <div class="math" id="s3math"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  Diffie-Hellman Simulation &mdash; Network Security Spring 2026 &mdash;
+  <span>Bhansali · Mody · Bhat · Londhe</span>
+</footer>
+
+<script src="../js/dh-math.js"></script>
+<script src="../js/forward-secrecy.js"></script>
+</body>
+</html>

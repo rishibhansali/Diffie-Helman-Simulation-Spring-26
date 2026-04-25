@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DH Simulation — Home</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    .hero {
+      padding: 5rem 2rem 3rem;
+      text-align: center;
+      position: relative;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 50%; transform: translateX(-50%);
+      width: 900px; height: 400px;
+      background: radial-gradient(ellipse at center,
+        rgba(0,255,136,0.08) 0%,
+        rgba(0,170,255,0.05) 40%,
+        transparent 70%);
+      pointer-events: none;
+    }
+    .hero-badge {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      letter-spacing: 0.15em;
+      color: var(--green);
+      background: var(--green-glow);
+      border: 1px solid var(--green);
+      border-radius: 20px;
+      padding: 0.3rem 1rem;
+      margin-bottom: 1.5rem;
+      text-transform: uppercase;
+    }
+    .hero h1 {
+      font-size: clamp(2rem, 5vw, 3.75rem);
+      font-weight: 700;
+      line-height: 1.15;
+      margin-bottom: 1.25rem;
+    }
+    .hero h1 .line1 {
+      display: block;
+      background: linear-gradient(135deg, #e0e0e0 0%, #888899 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero h1 .line2 {
+      display: block;
+      background: linear-gradient(135deg, var(--green) 0%, var(--blue) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero p {
+      max-width: 640px;
+      margin: 0 auto 2.5rem;
+      color: var(--text-muted);
+      font-size: 1.05rem;
+      line-height: 1.7;
+    }
+    .hero-cta {
+      display: flex;
+      gap: 0.75rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .course-strip {
+      background: var(--bg-card);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: center;
+      gap: 3rem;
+      flex-wrap: wrap;
+    }
+    .course-strip .item { text-align: center; }
+    .course-strip .item .label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-dim); }
+    .course-strip .item .value { font-size: 0.875rem; font-weight: 600; color: var(--text-muted); margin-top: 0.2rem; }
+    .dh-how {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 2rem;
+      margin-top: 1rem;
+    }
+    .dh-how h2 {
+      font-size: 1rem; font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 1.5rem;
+    }
+    .dh-how-steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1.5rem;
+    }
+    .dh-how-step {
+      position: relative;
+      background: var(--bg-elevated);
+      border-radius: var(--radius-md);
+      padding: 1.25rem;
+      border: 1px solid var(--border);
+    }
+    .dh-how-step .num {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      color: var(--green);
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+    .dh-how-step h4 { font-size: 0.875rem; font-weight: 600; color: var(--text); margin-bottom: 0.4rem; }
+    .dh-how-step .formula { font-family: var(--font-mono); font-size: 0.8rem; color: var(--blue); }
+    .dh-how-step p { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.35rem; line-height: 1.5; }
+    .separator {
+      position: absolute;
+      right: -0.85rem;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 1.2rem;
+      color: var(--border-bright);
+      z-index: 1;
+    }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <a class="navbar-brand" href="index.html">DH<span>SIM</span></a>
+  <ul class="navbar-links">
+    <li><a href="index.html" class="active">Home</a></li>
+    <li><a href="pages/dh-exchange.html">DH Exchange</a></li>
+    <li><a href="pages/mitm-attack.html">MITM Attack</a></li>
+    <li><a href="pages/weak-prime.html">Weak Prime</a></li>
+    <li><a href="pages/forward-secrecy.html">Forward Secrecy</a></li>
+    <li><a href="pages/authenticated-dh.html">Auth DH</a></li>
+  </ul>
+</nav>
+
+<section class="hero">
+  <div class="hero-badge">Network Security · Spring 2026</div>
+  <h1>
+    <span class="line1">Diffie-Hellman Under Attack:</span>
+    <span class="line2">A Security Simulation</span>
+  </h1>
+  <p>
+    An interactive, step-by-step exploration of the Diffie-Hellman key exchange protocol —
+    how it works, how it fails, and how modern defenses protect it.
+    All cryptographic math runs live in your browser using real BigInt arithmetic.
+  </p>
+  <div class="hero-cta">
+    <a href="pages/dh-exchange.html" class="btn btn-primary">Start Simulation</a>
+    <a href="#simulations" class="btn btn-secondary">View All Modules</a>
+  </div>
+</section>
+
+<div class="course-strip">
+  <div class="item">
+    <div class="label">Course</div>
+    <div class="value">Network Security</div>
+  </div>
+  <div class="item">
+    <div class="label">Term</div>
+    <div class="value">Spring 2026</div>
+  </div>
+  <div class="item">
+    <div class="label">Team</div>
+    <div class="value">Bhansali · Mody · Bhat · Londhe</div>
+  </div>
+  <div class="item">
+    <div class="label">Project Type</div>
+    <div class="value">Interactive Simulation</div>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- Team -->
+  <div style="margin-top:3rem; margin-bottom:2rem;">
+    <h2 style="font-size:0.85rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:1rem;">
+      Team Members
+    </h2>
+    <div class="team-grid">
+      <div class="team-card">
+        <div class="team-avatar">RB</div>
+        <h4>Rishi Bhansali</h4>
+        <p>Simulation Lead</p>
+      </div>
+      <div class="team-card">
+        <div class="team-avatar">AM</div>
+        <h4>Aarav Mody</h4>
+        <p>Cryptography</p>
+      </div>
+      <div class="team-card">
+        <div class="team-avatar">AB</div>
+        <h4>Aryan Bhat</h4>
+        <p>Attack Models</p>
+      </div>
+      <div class="team-card">
+        <div class="team-avatar">LL</div>
+        <h4>Lekha Londhe</h4>
+        <p>Frontend & Viz</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Simulation cards -->
+  <div id="simulations">
+    <h2 style="font-size:0.85rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:1rem;">
+      Simulation Modules
+    </h2>
+    <div class="sim-cards">
+      <a href="pages/dh-exchange.html" class="sim-card">
+        <div class="sim-card-icon">🔑</div>
+        <span class="tag tag-secure">Baseline</span>
+        <h3>DH Key Exchange</h3>
+        <p>The canonical Diffie-Hellman handshake between Alice and Bob. Watch public keys travel, private keys stay hidden, and both parties arrive at the same shared secret.</p>
+      </a>
+      <a href="pages/mitm-attack.html" class="sim-card">
+        <div class="sim-card-icon">👁</div>
+        <span class="tag tag-attack">Attack</span>
+        <h3>MITM Attack</h3>
+        <p>Eve positions herself between Alice and Bob, intercepting and replacing public keys. Neither party suspects a thing — and Eve can read every message.</p>
+      </a>
+      <a href="pages/weak-prime.html" class="sim-card">
+        <div class="sim-card-icon">💀</div>
+        <span class="tag tag-attack">Attack</span>
+        <h3>Weak Prime Attack</h3>
+        <p>Choose a small prime and watch the brute-force discrete logarithm attack crack the private key in real time. Compare to the infeasibility of attacking 2048-bit primes.</p>
+      </a>
+      <a href="pages/forward-secrecy.html" class="sim-card">
+        <div class="sim-card-icon">🔒</div>
+        <span class="tag tag-defense">Defense</span>
+        <h3>Forward Secrecy</h3>
+        <p>What happens when a long-term key is leaked? With static keys, all past sessions are exposed. Ephemeral keys guarantee past sessions stay secret even after compromise.</p>
+      </a>
+      <a href="pages/authenticated-dh.html" class="sim-card">
+        <div class="sim-card-icon">✅</div>
+        <span class="tag tag-defense">Defense</span>
+        <h3>Authenticated DH</h3>
+        <p>The MITM attack relies on anonymity. Add digital signatures to public keys and Eve's interception fails instantly — identity verification closes the gap.</p>
+      </a>
+    </div>
+  </div>
+
+  <!-- How DH works -->
+  <div class="dh-how" id="how-dh-works">
+    <h2>How Diffie-Hellman Works</h2>
+    <div class="dh-how-steps">
+      <div class="dh-how-step">
+        <div class="num">Step 01</div>
+        <h4>Public Parameters</h4>
+        <div class="formula">Agree on p, g</div>
+        <p>Alice and Bob publicly agree on a large prime <em>p</em> and a generator <em>g</em>. These can be known to everyone.</p>
+      </div>
+      <div class="dh-how-step">
+        <div class="num">Step 02</div>
+        <h4>Private Keys</h4>
+        <div class="formula">X_A, X_B ← secret</div>
+        <p>Each party picks a secret private key at random. These never leave their machine.</p>
+      </div>
+      <div class="dh-how-step">
+        <div class="num">Step 03</div>
+        <h4>Public Keys</h4>
+        <div class="formula">Y_A = g^X_A mod p</div>
+        <p>Each party computes a public key using modular exponentiation and broadcasts it.</p>
+      </div>
+      <div class="dh-how-step">
+        <div class="num">Step 04</div>
+        <h4>Shared Secret</h4>
+        <div class="formula">K = Y_B^X_A mod p</div>
+        <p>Alice raises Bob's public key to her private key. Bob does the same with Alice's key. Both get identical K.</p>
+      </div>
+      <div class="dh-how-step">
+        <div class="num">Step 05</div>
+        <h4>Security Basis</h4>
+        <div class="formula">DLP: g^x ≡ Y (mod p)</div>
+        <p>An attacker knowing only Y, g, and p must solve the Discrete Logarithm Problem — computationally infeasible for large p.</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  Diffie-Hellman Simulation &mdash; Network Security Spring 2026 &mdash;
+  <span>Bhansali · Mody · Bhat · Londhe</span>
+</footer>
+
+</body>
+</html>

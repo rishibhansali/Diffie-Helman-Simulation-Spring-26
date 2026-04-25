@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Authenticated DH — Simulation</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .auth-compare {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 1.5rem 0;
+    }
+    @media(max-width:700px){ .auth-compare { grid-template-columns: 1fr; } }
+    .auth-col {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 1rem;
+    }
+    .auth-col h4 {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .auth-col ul { list-style: none; padding: 0; }
+    .auth-col ul li {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      padding: 0.3rem 0;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+    .auth-col ul li:last-child { border-bottom: none; }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <a class="navbar-brand" href="../index.html">DH<span>SIM</span></a>
+  <ul class="navbar-links">
+    <li><a href="../index.html">Home</a></li>
+    <li><a href="dh-exchange.html">DH Exchange</a></li>
+    <li><a href="mitm-attack.html">MITM Attack</a></li>
+    <li><a href="weak-prime.html">Weak Prime</a></li>
+    <li><a href="forward-secrecy.html">Forward Secrecy</a></li>
+    <li><a href="authenticated-dh.html" class="active">Auth DH</a></li>
+  </ul>
+</nav>
+
+<div class="page-header">
+  <h1>Authenticated Diffie-Hellman</h1>
+  <p>
+    The MITM attack exploits the absence of identity verification in vanilla DH.
+    The fix is straightforward: digitally sign your public key with a long-term
+    identity key. Eve cannot forge a valid signature — her interception attempt
+    is detected immediately.
+  </p>
+</div>
+
+<div class="container">
+
+  <div class="btn-group">
+    <button class="btn btn-primary" id="btnRun">▶ Run Authenticated Exchange</button>
+    <button class="btn btn-secondary" id="btnReset">↺ Reset</button>
+  </div>
+
+  <div id="resultBanner" class="result-banner"></div>
+
+  <div class="sim-layout">
+    <!-- LEFT: Animation -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-dot"></span>
+        <h3>Authentication Animation</h3>
+      </div>
+      <div class="panel-body" style="padding:0;">
+        <canvas class="anim-canvas" id="canvas" width="600" height="320"></canvas>
+      </div>
+    </div>
+
+    <!-- RIGHT: Numbers -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-dot blue"></span>
+        <h3>Live Numbers</h3>
+      </div>
+      <div class="panel-body">
+        <div class="numbers-grid">
+          <div class="num-row"><span class="num-label">Prime (p)</span><span class="num-val muted" id="nP">—</span></div>
+          <div class="num-row"><span class="num-label">Generator (g)</span><span class="num-val muted" id="nG">—</span></div>
+          <div class="num-row"><span class="num-label">Alice DH public (Y_A)</span><span class="num-val" id="nYA">—</span></div>
+          <div class="num-row"><span class="num-label">Alice signature (Sig_A)</span><span class="num-val blue" id="nSigA">—</span></div>
+          <div class="num-row"><span class="num-label">Bob DH public (Y_B)</span><span class="num-val" id="nYB">—</span></div>
+          <div class="num-row"><span class="num-label">Bob signature (Sig_B)</span><span class="num-val blue" id="nSigB">—</span></div>
+          <div class="num-row"><span class="num-label">Eve intercept attempt</span><span class="num-val red" id="nEve">—</span></div>
+          <div class="num-row"><span class="num-label">Sig verification result</span><span class="num-val" id="nVerify">—</span></div>
+          <div class="num-row" style="border-color:var(--green)"><span class="num-label" style="color:var(--green)">Shared Secret (K)</span><span class="num-val" style="color:var(--green)" id="nK">—</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Comparison -->
+  <div class="auth-compare">
+    <div class="auth-col">
+      <h4 style="color:var(--red)">Unauthenticated DH (vulnerable)</h4>
+      <ul>
+        <li><span style="color:var(--red)">✗</span> No identity binding — anyone can pose as Alice or Bob</li>
+        <li><span style="color:var(--red)">✗</span> Eve intercepts Y_A, substitutes Y_E — undetected</li>
+        <li><span style="color:var(--red)">✗</span> Two separate shared secrets created</li>
+        <li><span style="color:var(--red)">✗</span> Eve reads and re-encrypts all messages</li>
+        <li><span style="color:var(--red)">✗</span> No way to detect the attack at protocol level</li>
+      </ul>
+    </div>
+    <div class="auth-col">
+      <h4 style="color:var(--green)">Authenticated DH (secure)</h4>
+      <ul>
+        <li><span style="color:var(--green)">✓</span> Each party signs their DH public key with their identity key</li>
+        <li><span style="color:var(--green)">✓</span> Eve cannot produce a valid signature for Alice's identity</li>
+        <li><span style="color:var(--green)">✓</span> Recipient verifies signature before accepting the public key</li>
+        <li><span style="color:var(--green)">✓</span> Eve's substituted key fails verification — alert raised</li>
+        <li><span style="color:var(--green)">✓</span> Used in TLS 1.3, Signal Protocol, SSH</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Steps -->
+  <div class="steps-section">
+    <h2>Step-by-Step Breakdown</h2>
+    <div class="step-list">
+      <div class="step-item" id="s1">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <h4>Long-Term Identity Keys</h4>
+          <p>Before any session, Alice and Bob each have a long-term identity key pair whose public components are certified by a trusted authority (CA or out-of-band verification). These are separate from the session DH keys.</p>
+        </div>
+      </div>
+      <div class="step-item" id="s2">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <h4>Sign the DH Public Key</h4>
+          <p>Alice sends (Y_A, Sig_A) where Sig_A = Sign(sk_A, Y_A). Bob sends (Y_B, Sig_B). The signature cryptographically binds the DH public key to the sender's verified identity.</p>
+          <div class="math" id="s2math"></div>
+        </div>
+      </div>
+      <div class="step-item" id="s3">
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <h4>Eve Tries to Intercept</h4>
+          <p>Eve intercepts Alice's message and substitutes her own (Y_E, Sig_E). Bob attempts to verify: Verify(pk_A, Y_E, Sig_E) — this fails because Sig_E was created with Eve's key, not Alice's. Bob rejects the message and aborts.</p>
+          <div class="math" id="s3math"></div>
+        </div>
+      </div>
+      <div class="step-item" id="s4">
+        <div class="step-num">4</div>
+        <div class="step-content">
+          <h4>Legitimate Exchange Succeeds</h4>
+          <p>With Eve blocked, Alice and Bob complete the exchange using their authentic (Y_A, Y_B) values, arriving at a shared secret K that only they can compute. The MITM attack is defeated.</p>
+          <div class="math" id="s4math"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  Diffie-Hellman Simulation &mdash; Network Security Spring 2026 &mdash;
+  <span>Bhansali · Mody · Bhat · Londhe</span>
+</footer>
+
+<script src="../js/dh-math.js"></script>
+<script src="../js/authenticated-dh.js"></script>
+</body>
+</html>

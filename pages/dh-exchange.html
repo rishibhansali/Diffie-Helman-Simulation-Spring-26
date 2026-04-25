@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DH Exchange — Simulation</title>
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+
+<nav class="navbar">
+  <a class="navbar-brand" href="../index.html">DH<span>SIM</span></a>
+  <ul class="navbar-links">
+    <li><a href="../index.html">Home</a></li>
+    <li><a href="dh-exchange.html" class="active">DH Exchange</a></li>
+    <li><a href="mitm-attack.html">MITM Attack</a></li>
+    <li><a href="weak-prime.html">Weak Prime</a></li>
+    <li><a href="forward-secrecy.html">Forward Secrecy</a></li>
+    <li><a href="authenticated-dh.html">Auth DH</a></li>
+  </ul>
+</nav>
+
+<div class="page-header">
+  <h1>Diffie-Hellman Key Exchange</h1>
+  <p>
+    The baseline protocol: Alice and Bob establish a shared secret over a completely public channel
+    without ever transmitting it. The security rests on the computational hardness of the
+    Discrete Logarithm Problem.
+  </p>
+</div>
+
+<div class="container">
+
+  <div class="btn-group">
+    <button class="btn btn-primary" id="btnRun">▶ Run Simulation</button>
+    <button class="btn btn-secondary" id="btnReset">↺ Reset</button>
+  </div>
+
+  <div id="resultBanner" class="result-banner"></div>
+
+  <div class="sim-layout">
+    <!-- LEFT: Animation -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-dot"></span>
+        <h3>Exchange Animation</h3>
+      </div>
+      <div class="panel-body" style="padding:0;">
+        <canvas class="anim-canvas" id="canvas" width="600" height="320"></canvas>
+      </div>
+    </div>
+
+    <!-- RIGHT: Numbers -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-dot blue"></span>
+        <h3>Live Numbers</h3>
+      </div>
+      <div class="panel-body">
+        <div class="numbers-grid" id="numGrid">
+          <div class="num-row"><span class="num-label">Prime (p)</span><span class="num-val muted" id="nP">—</span></div>
+          <div class="num-row"><span class="num-label">Generator (g)</span><span class="num-val muted" id="nG">—</span></div>
+          <div class="num-row"><span class="num-label">Alice private (X_A)</span><span class="num-val" id="nXA">—</span></div>
+          <div class="num-row"><span class="num-label">Alice public (Y_A = g^X_A mod p)</span><span class="num-val blue" id="nYA">—</span></div>
+          <div class="num-row"><span class="num-label">Bob private (X_B)</span><span class="num-val" id="nXB">—</span></div>
+          <div class="num-row"><span class="num-label">Bob public (Y_B = g^X_B mod p)</span><span class="num-val blue" id="nYB">—</span></div>
+          <div class="num-row"><span class="num-label">Alice computes: Y_B^X_A mod p</span><span class="num-val yellow" id="nKA">—</span></div>
+          <div class="num-row"><span class="num-label">Bob computes:   Y_A^X_B mod p</span><span class="num-val yellow" id="nKB">—</span></div>
+          <div class="num-row" style="border-color:var(--green);"><span class="num-label" style="color:var(--green);">Shared Secret (K)</span><span class="num-val" id="nK" style="color:var(--green);font-weight:700;">—</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step breakdown -->
+  <div class="steps-section">
+    <h2>Step-by-Step Breakdown</h2>
+    <div class="step-list" id="stepList">
+      <div class="step-item" id="s1">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <h4>Agree on Public Parameters</h4>
+          <p>Alice and Bob publicly agree on a large prime <em>p</em> and a primitive root (generator) <em>g</em>. Anyone can know these — they provide no advantage to an eavesdropper.</p>
+          <div class="math" id="s1math"></div>
+        </div>
+      </div>
+      <div class="step-item" id="s2">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <h4>Alice Generates Her Key Pair</h4>
+          <p>Alice picks a secret random integer X_A and computes her public key Y_A = g^X_A mod p. She sends Y_A to Bob over the public channel.</p>
+          <div class="math" id="s2math"></div>
+        </div>
+      </div>
+      <div class="step-item" id="s3">
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <h4>Bob Generates His Key Pair</h4>
+          <p>Bob similarly picks a secret X_B and computes Y_B = g^X_B mod p. He sends Y_B to Alice over the public channel.</p>
+          <div class="math" id="s3math"></div>
+        </div>
+      </div>
+      <div class="step-item" id="s4">
+        <div class="step-num">4</div>
+        <div class="step-content">
+          <h4>Both Compute the Shared Secret</h4>
+          <p>Alice computes K = Y_B^X_A mod p. Bob computes K = Y_A^X_B mod p. By the properties of modular exponentiation, both values are identical — this is the shared secret.</p>
+          <div class="math" id="s4math"></div>
+        </div>
+      </div>
+      <div class="step-item" id="s5">
+        <div class="step-num">5</div>
+        <div class="step-content">
+          <h4>Security Analysis</h4>
+          <p>An eavesdropper sees p, g, Y_A, and Y_B — but to find X_A or X_B they must solve the Discrete Logarithm Problem (DLP): find x such that g^x ≡ Y (mod p). For a 2048-bit prime, this is computationally infeasible with any known algorithm.</p>
+          <div class="math">DLP: given g, Y, p — find x such that g^x ≡ Y (mod p)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  Diffie-Hellman Simulation &mdash; Network Security Spring 2026 &mdash;
+  <span>Bhansali · Mody · Bhat · Londhe</span>
+</footer>
+
+<script src="../js/dh-math.js"></script>
+<script src="../js/dh-exchange.js"></script>
+</body>
+</html>
